@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>家計簿</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <div id="panels"></div>
+</div>
+
+<nav class="tabbar" id="tabbar"></nav>
+
+<div class="toast" id="toast">記録しました</div>
+<iframe id="hidden_iframe" name="hidden_iframe"></iframe>
+
+<script src="config.js"></script>
+<script>
+// =========================================================
+// CONFIG をもとにフォーム群とタブバーを生成
+// =========================================================
+
+(function () {
+  const panelsEl = document.getElementById('panels');
+  const tabbarEl = document.getElementById('tabbar');
+  const toast    = document.getElementById('toast');
+  const iframe   = document.getElementById('hidden_iframe');
+
+  CONFIG.forms.forEach(buildPanel);
+  CONFIG.forms.forEach(buildTab);
+  switchTo(CONFIG.forms[0].id);
+
+  // =========================================================
+  // パネル＆フォーム構築
+  // =========================================================
+  function buildPanel(f) {
+    const panel = document.createElement('section');
+    panel.className = 'form-panel';
+    panel.dataset.formId = f.id;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const header = document.createElement('div');
+    header.className = 'header';
+    const h1 = document.createElement('h1');
+    h1.textContent = f.title;
+    const p = document.createElement('p');
+    p.textContent = f.subtitle;
+    header.appendChild(h1);
+    header.appendChild(p);
+    card.appendChild(header);
+
+    const form = document.createElement('form');
+    form.dataset.formId = f.id;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitForm(form, f);
+    });
+
+    f.fields.forEach(fd => {
+      const node = buildField(fd, f.id);
+      if (node) form.appendChild(node);
+    });
+
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className = 'submit';
+    btn.textContent = f.submitLabel;
+    btn.dataset.original = f.submitLabel;
+    form.appendChild(btn);
+
+    bindDependencies(form, f);
+
+    card.appendChild(form);
+    panel.appendChild(card);
+    panelsEl.appendChild(panel);
+  }
+
+  function buildTab(f) {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.dataset.target = f.id;
+    const icon = document.createElement('span');
+    icon.className = 'icon';
+    icon.innerHTML = ICONS[f.icon] || '';
+    const label = document.createElement('span');
+    label.textContent = f.label;
+    tab.appendChild(icon);
+    tab.appendChild(label);
+    tab.addEventListener('click', () => switchTo(f.id));
+    tabbarEl.appendChild(tab);
+  }
+
+  // =========================================================
+  // フィールド構築
+  // =========================================================
+  function buildField(f, formId) {
+    if (f.type === 'hidden') {
+      const el = document.createElement('input');
+      el.type = 'hidden';
+      el.name = f.entry || '';
+      el.value = f.value != null ? f.value : '';
+      el.dataset.fname = f.name;
+      return el;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    wrap.dataset.fieldName = f.name;
+
+    const inputId = `f_${formId}_${f.name}`;
+
+    const lbl = document.createElement('label');
+    lbl.className = 'lbl';
+    lbl.htmlFor = inputId;
+    lbl.textContent = resolveInitialLabel(f);
+    wrap.appendChild(lbl);
+
+    wrap.appendChild(buildInput(f, inputId));
+    return wrap;
+  }
+
+  function resolveInitialLabel(f) {
+    if (!f.dependsOn || !f.dependsOn.labelMap) return f.label || '';
+    const firstKey = Object.keys(f.dependsOn.labelMap)[0];
+    return f.dependsOn.labelMap[firstKey] || f.label || '';
+  }
+
+  function buildInput(f, id) {
+    switch (f.type) {
+      case 'date':     return buildSimple('date', f, id);
+      case 'text':     return buildSimple('text', f, id);
+      case 'number':   return buildNumber(f, id);
+      case 'textarea': return buildTextarea(f, id);
+      case 'select':   return buildSelect(f, id);
+      case 'radio':    return buildRadio(f, id);
+      default: {
+        const d = document.createElement('div');
+        d.textContent = `(未対応のtype: ${f.type})`;
+        return d;
+      }
+    }
+  }
+
+  function applyCommon(el, f) {
+    if (f.entry) el.name = f.entry;
+    el.dataset.fname = f.name;
+    if (f.required) el.required = true;
+    if (f.placeholder) el.placeholder = f.placeholder;
+  }
+
+  function buildSimple(type, f, id) {
+    const el = document.createElement('input');
+    el.type = type;
+    el.id = id;
+    applyCommon(el, f);
+    if (type === 'date' && f.default === 'today') el.valueAsDate = new Date();
+    return el;
+  }
+  function buildNumber(f, id) {
+    const el = document.createElement('input');
+    el.type = 'number';
+    el.id = id;
+    el.inputMode = 'numeric';
+    el.min = 0;
+    applyCommon(el, f);
+    if (!f.prefix) return el;
+    const wrap = document.createElement('div');
+    wrap.className = 'input-with-prefix';
+    const span = document.createElement('span');
+    span.className = 'prefix';
+    span.textContent = f.prefix;
+    wrap.appendChild(span);
+    wrap.appendChild(el);
+    return wrap;
+  }
+  function buildTextarea(f, id) {
+    const el = document.createElement('textarea');
+    el.id = id;
+    el.rows = 2;
+    applyCommon(el, f);
+    return el;
+  }
+  function buildSelect(f, id) {
+    const el = document.createElement('select');
+    el.id = id;
+    applyCommon(el, f);
+
+    // optionsMap がある場合は初期選択肢を決定
+    const initialOptions = resolveInitialOptions(f);
+    initialOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      if (f.default === opt) o.selected = true;
+      el.appendChild(o);
+    });
+    return el;
+  }
+
+  function resolveInitialOptions(f) {
+    if (f.dependsOn && f.dependsOn.optionsMap) {
+      const firstKey = Object.keys(f.dependsOn.optionsMap)[0];
+      return f.dependsOn.optionsMap[firstKey] || [];
+    }
+    return f.options || [];
+  }
+
+  // ラジオはinputにだけdata-fnameを付ける（divには付けない＝バグ修正）
+  function buildRadio(f, id) {
+    const group = document.createElement('div');
+    const cols = (f.options || []).length;
+    group.className = 'radio-group ' +
+      (cols === 2 ? 'cols-2' : cols === 3 ? 'cols-3' : 'cols-many');
+    // ※ group には dataset.fname を付けない（querySelectorAllで誤検出するため）
+
+    (f.options || []).forEach((opt, idx) => {
+      const lbl = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio';
+      if (f.entry) input.name = f.entry;
+      else input.name = `__radio_${f.name}`;
+      input.value = opt;
+      input.dataset.fname = f.name;
+      if (f.default ? f.default === opt : idx === 0) input.checked = true;
+      const span = document.createElement('span');
+      span.textContent = opt;
+      lbl.appendChild(input);
+      lbl.appendChild(span);
+      group.appendChild(lbl);
+    });
+    return group;
+  }
+
+  // =========================================================
+  // 依存ラベル & 依存選択肢
+  // =========================================================
+  function bindDependencies(form, formDef) {
+    formDef.fields.forEach(f => {
+      if (!f.dependsOn) return;
+      const depName = f.dependsOn.field;
+
+      const update = () => {
+        const val = getValueByName(form, depName);
+
+        // ラベル切替
+        if (f.dependsOn.labelMap) {
+          const target = form.querySelector(`[data-field-name="${f.name}"] .lbl`);
+          if (target && f.dependsOn.labelMap[val]) {
+            target.textContent = f.dependsOn.labelMap[val];
+          }
+        }
+
+        // 選択肢切替（select用）
+        if (f.dependsOn.optionsMap) {
+          const sel = form.querySelector(`select[data-fname="${f.name}"]`);
+          const newOpts = f.dependsOn.optionsMap[val];
+          if (sel && newOpts) {
+            const prev = sel.value;
+            sel.innerHTML = '';
+            newOpts.forEach(opt => {
+              const o = document.createElement('option');
+              o.value = opt;
+              o.textContent = opt;
+              sel.appendChild(o);
+            });
+            // 同じ値が新しい選択肢にあれば維持、なければ先頭
+            if (newOpts.includes(prev)) sel.value = prev;
+          }
+        }
+      };
+
+      // 依存元の入力（input/select）にイベントバインド
+      const depInputs = form.querySelectorAll(`input[data-fname="${depName}"], select[data-fname="${depName}"], textarea[data-fname="${depName}"]`);
+      depInputs.forEach(el => {
+        el.addEventListener('change', update);
+      });
+      update();
+    });
+  }
+
+  // input/select/textarea要素から値を取得（divは除外）
+  function getValueByName(form, fname) {
+    const els = form.querySelectorAll(`input[data-fname="${fname}"], select[data-fname="${fname}"], textarea[data-fname="${fname}"]`);
+    if (els.length === 0) return null;
+    // ラジオ
+    if (els[0].type === 'radio') {
+      const checked = Array.from(els).find(e => e.checked);
+      return checked ? checked.value : null;
+    }
+    return els[0].value;
+  }
+
+  // =========================================================
+  // タブ切替
+  // =========================================================
+  function switchTo(id) {
+    document.querySelectorAll('.form-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.formId === id);
+    });
+    tabbarEl.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.target === id);
+    });
+    window.scrollTo({ top: 0 });
+  }
+
+  // =========================================================
+  // 送信処理
+  // =========================================================
+  function submitForm(form, formDef) {
+    const btn = form.querySelector('button.submit');
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '送信中…';
+
+    if (formDef.submitMode === 'split' && typeof formDef.splitPayloads === 'function') {
+      const values = collectValues(form, formDef);
+      const payloads = formDef.splitPayloads(values);
+      submitSequential(payloads, () => onSubmitDone(form, formDef, btn));
+    } else {
+      const payload = collectPayload(form, formDef);
+      submitOne(payload, () => onSubmitDone(form, formDef, btn));
+    }
+  }
+
+  function collectValues(form, formDef) {
+    const out = {};
+    formDef.fields.forEach(f => {
+      out[f.name] = getValueByName(form, f.name);
+    });
+    return out;
+  }
+
+  function collectPayload(form, formDef) {
+    const out = {};
+    formDef.fields.forEach(f => {
+      if (!f.entry) return;
+      if (f.type === 'hidden') {
+        out[f.entry] = f.value != null ? f.value : '';
+      } else {
+        const v = getValueByName(form, f.name);
+        if (v != null) out[f.entry] = v;
+      }
+    });
+    return out;
+  }
+
+  function submitOne(payload, onLoad) {
+    const tempForm = document.createElement('form');
+    tempForm.action = CONFIG.action;
+    tempForm.method = 'POST';
+    tempForm.target = 'hidden_iframe';
+    tempForm.style.display = 'none';
+
+    Object.entries(payload).forEach(([name, value]) => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = name;
+      inp.value = value;
+      tempForm.appendChild(inp);
+    });
+
+    const handler = () => {
+      iframe.removeEventListener('load', handler);
+      tempForm.remove();
+      onLoad();
+    };
+    iframe.addEventListener('load', handler);
+
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+  }
+
+  function submitSequential(payloads, onAllDone) {
+    let i = 0;
+    const next = () => {
+      if (i >= payloads.length) {
+        onAllDone();
+        return;
+      }
+      submitOne(payloads[i++], next);
+    };
+    next();
+  }
+
+  function onSubmitDone(form, formDef, btn) {
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+
+    form.reset();
+    formDef.fields.forEach(fd => {
+      if (fd.type === 'date' && fd.default === 'today') {
+        const el = form.querySelector(`[data-fname="${fd.name}"]`);
+        if (el) el.valueAsDate = new Date();
+      }
+    });
+    // 依存ラベル＆選択肢を初期状態に
+    bindDependencies(form, formDef);
+
+    btn.disabled = false;
+    btn.textContent = btn.dataset.original;
+  }
+})();
+</script>
+
+</body>
+</html>
