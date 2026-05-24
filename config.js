@@ -132,7 +132,7 @@ const CONFIG = {
 
         { name: 'week', label: '週度', type: 'select',
           entry: 'entry.1609471946',
-          options: ['1週目', '2週目', '3週目', '4週目', '5週目'] },
+          options: ['', '1週目', '2週目', '3週目', '4週目', '5週目'] },
 
         { name: 'category', label: 'カテゴリ', type: 'select',
           entry: 'entry.1670717952', required: true,
