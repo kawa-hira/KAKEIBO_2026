@@ -105,13 +105,13 @@ const CONFIG = {
       // 種別="振替" 固定。出金元はマイナス値、入金先はプラス値
       splitPayloads: (v) => {
         const common = {
-          'entry.375635195': v.date,
+          'entry.1754312861': v.date,
           'entry.104175700': '振替',
           'entry.283245123': v.memo || '',
         };
         return [
-          { ...common, 'entry.164562765': v.walletFrom, 'entry.283245123': '-' + v.amount },
-          { ...common, 'entry.1497529552': v.walletTo,   'entry.283245123': v.amount },
+          { ...common, 'entry.164562765': v.walletFrom, 'entry.1976713429': '-' + v.amount },
+          { ...common, 'entry.1497529552': v.walletTo,   'entry.1976713429': v.amount },
         ];
       },
     },
@@ -132,7 +132,8 @@ const CONFIG = {
 
         { name: 'week', label: '週度', type: 'select',
           entry: 'entry.1609471946',
-          options: ['', '1週目', '2週目', '3週目', '4週目', '5週目'] },
+          options: ['', '1週目', '2週目', '3週目', '4週目', '5週目'],
+          default: '' },
 
         { name: 'category', label: 'カテゴリ', type: 'select',
           entry: 'entry.1670717952', required: true,
