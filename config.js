@@ -142,8 +142,9 @@ const CONFIG = {
       subtitle: '月度・週度の予算',
       submitLabel: '登録',
       fields: [
-        { name: 'month', label: '月度', type: 'text',
-          entry: 'entry.3034075', placeholder: '例：2026年5月度' },
+        { name: 'month', label: '月度', type: 'select',
+          entry: 'entry.3034075', required: true,
+          options: ['2026年5月度', '2026年6月度', '2026年7月度', '2026年8月度'] },
 
         { name: 'week', label: '週度', type: 'select',
           entry: 'entry.1242745949',
