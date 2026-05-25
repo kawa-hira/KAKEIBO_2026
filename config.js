@@ -3,14 +3,14 @@
 // =========================================================
 //
 // Googleフォームの実際の項目：
-//   日付 / 月度 / 週度 / 種別 / カテゴリ / 費目 / 出金元 / 入金先 / 金額 / メモ
+//   日付 / 種別 / カテゴリ / 出金元 / 入金先 / 金額 / メモ
 //
 // 各シートで使わない項目は fields に書かなければOK（空送信になる）
 // =========================================================
 
 const CONFIG = {
   // 全シート共通の送信先
-  action: 'https://docs.google.com/forms/d/e/1FAIpQLSc2wP6nKtexr11OOrRTfkfSlmt13ejwFx3jsvWxy7lCgm6-Ew/formResponse',
+  action: 'https://docs.google.com/forms/d/e/-Ew/formResponse',
 
   forms: [
     // -----------------------------------------------------
@@ -52,7 +52,6 @@ const CONFIG = {
         {
           name: 'wallet',
           type: 'select',
-          // entry はフォールバック（entryMapがあればそちらが優先）
           entry: 'entry.341017103',
           required: true,
           options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay',
@@ -130,38 +129,6 @@ const CONFIG = {
         ];
       },
     },
-
-    // -----------------------------------------------------
-    // 予算登録
-    // -----------------------------------------------------
-    {
-      id: 'budget',
-      label: '予算',
-      icon: 'wallet',
-      title: '予算を登録',
-      subtitle: '月度・週度の予算',
-      submitLabel: '登録',
-      fields: [
-        { name: 'month', label: '月度', type: 'select',
-          entry: 'entry.3034075', required: true,
-          options: ['2026年5月度', '2026年6月度', '2026年7月度', '2026年8月度'] },
-
-        { name: 'week', label: '週度', type: 'select',
-          entry: 'entry.1242745949',
-          options: ['', '1週目', '2週目', '3週目', '4週目', '5週目'],
-          default: '' },
-
-        { name: 'category', label: 'カテゴリ', type: 'select',
-          entry: 'entry.1548661037', required: true,
-          options: ['固定費', '通勤費', 'スーパー代', '特別費'] },
-
-        { name: 'item', label: '費目', type: 'text',
-          entry: 'entry.1463645866', placeholder: '例：家賃' },
-
-        { name: 'amount', label: '金額', type: 'number',
-          entry: 'entry.2072083293', required: true, prefix: '¥', placeholder: '0' },
-      ],
-    },
   ],
 };
 
@@ -170,5 +137,4 @@ const ICONS = {
   minus:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>',
   plus:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   swap:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
-  wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M16 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>',
 };
