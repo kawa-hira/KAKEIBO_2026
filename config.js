@@ -31,7 +31,7 @@ const CONFIG = {
 
         // 種別を切り替えると、下の「カテゴリ」と「おさいふ」が変わる
         { name: 'type', label: '種別', type: 'radio',
-          entry: 'entry.104175700', required: true,
+          entry: 'entry.933151050', required: true,
           options: ['支出', '収入'], default: '支出' },
 
         // カテゴリ：種別ごとに選択肢を切り替え
@@ -39,7 +39,7 @@ const CONFIG = {
           name: 'category',
           label: 'カテゴリ',
           type: 'select',
-          entry: 'entry.1670717952',
+          entry: 'entry.1548661037',
           required: true,
           dependsOn: {
             field: 'type',
@@ -54,7 +54,7 @@ const CONFIG = {
         {
           name: 'wallet',
           type: 'select',
-          entry: 'entry.164562765',
+          entry: 'entry.341017103',
           required: true,
           options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay', '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'],
           dependsOn: {
@@ -64,10 +64,10 @@ const CONFIG = {
         },
 
         { name: 'amount', label: '金額', type: 'number',
-          entry: 'entry.1976713429', required: true, prefix: '¥', placeholder: '0' },
+          entry: 'entry.2072083293', required: true, prefix: '¥', placeholder: '0' },
 
         { name: 'memo', label: 'メモ', type: 'textarea',
-          entry: 'entry.283245123', placeholder: '任意' },
+          entry: 'entry.137918229', placeholder: '任意' },
       ],
     },
 
@@ -106,12 +106,12 @@ const CONFIG = {
       splitPayloads: (v) => {
         const common = {
           'entry.1754312861': v.date,
-          'entry.104175700': '振替',
-          'entry.283245123': v.memo || '',
+          'entry.933151050': '振替',
+          'entry.137918229': v.memo || '',
         };
         return [
-          { ...common, 'entry.164562765': v.walletFrom, 'entry.1976713429': '-' + v.amount },
-          { ...common, 'entry.1497529552': v.walletTo,   'entry.1976713429': v.amount },
+          { ...common, 'entry.341017103': v.walletFrom, 'entry.2072083293': '-' + v.amount },
+          { ...common, 'entry.96804808': v.walletTo,   'entry.2072083293': v.amount },
         ];
       },
     },
@@ -128,22 +128,22 @@ const CONFIG = {
       submitLabel: '登録',
       fields: [
         { name: 'month', label: '月度', type: 'text',
-          entry: 'entry.1610250577', placeholder: '例：2026年5月度' },
+          entry: 'entry.3034075', placeholder: '例：2026年5月度' },
 
         { name: 'week', label: '週度', type: 'select',
-          entry: 'entry.1609471946',
+          entry: 'entry.1242745949',
           options: ['', '1週目', '2週目', '3週目', '4週目', '5週目'],
           default: '' },
 
         { name: 'category', label: 'カテゴリ', type: 'select',
-          entry: 'entry.1670717952', required: true,
+          entry: 'entry.1548661037', required: true,
           options: ['固定費', '通勤費', 'スーパー代', '特別費'] },
 
         { name: 'item', label: '費目', type: 'text',
-          entry: 'entry.497073049', placeholder: '例：家賃' },
+          entry: 'entry.1463645866', placeholder: '例：家賃' },
 
         { name: 'amount', label: '金額', type: 'number',
-          entry: 'entry.1976713429', required: true, prefix: '¥', placeholder: '0' },
+          entry: 'entry.2072083293', required: true, prefix: '¥', placeholder: '0' },
       ],
     },
   ],
