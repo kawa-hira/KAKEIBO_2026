@@ -10,7 +10,7 @@
 
 const CONFIG = {
   // 全シート共通の送信先
-  action: 'https://docs.google.com/forms/d/e/-Ew/formResponse',
+  action: 'https://docs.google.com/forms/d/e/1pYTLLFCNSiWClJl-X19BIb3XlrK6zw6S6S_VkJSgdDE/formResponse',
 
   forms: [
     // -----------------------------------------------------
