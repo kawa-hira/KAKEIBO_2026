@@ -3,16 +3,14 @@
 // =========================================================
 //
 // Googleフォームの実際の項目：
-//   日付 / 月度 / 週度 / 種別 / カテゴリ / 費目 / おさいふ / 金額 / メモ
+//   日付 / 月度 / 週度 / 種別 / カテゴリ / 費目 / 出金元 / 入金先 / 金額 / メモ
 //
 // 各シートで使わない項目は fields に書かなければOK（空送信になる）
 // =========================================================
 
 const CONFIG = {
   // 全シート共通の送信先
-  // 編集URL https://docs.google.com/forms/d/e/●●●/viewform の ●●● を差し替え
-  action: 'https://docs.google.com/forms/d/e/1FAIpQLSc2wP6nKtexr11OOrRTfkfSlmt13ejwFx3jsvWxy7lCgm6-Ew/formResponse',
-
+  action: 'https://docs.google.com/forms/d/e/-Ew/formResponse',
 
   forms: [
     // -----------------------------------------------------
@@ -50,16 +48,25 @@ const CONFIG = {
           },
         },
 
-        // おさいふ：種別ごとにラベルを切り替え
+        // おさいふ：種別ごとに「ラベル」と「送信先entry」を切り替え
         {
           name: 'wallet',
           type: 'select',
+          // entry はフォールバック（entryMapがあればそちらが優先）
           entry: 'entry.341017103',
           required: true,
-          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay', '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'],
+          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay',
+                    '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'],
           dependsOn: {
             field: 'type',
-            labelMap: { '支出': '出金元', '収入': '入金先' },
+            labelMap: {
+              '支出': '出金元',
+              '収入': '入金先',
+            },
+            entryMap: {
+              '支出': 'entry.341017103',  // 出金元のentry
+              '収入': 'entry.96804808',   // 入金先のentry
+            },
           },
         },
 
@@ -89,11 +96,13 @@ const CONFIG = {
 
         { name: 'walletFrom', label: '出金元', type: 'select',
           required: true,
-          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay', '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'] },
+          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay',
+                    '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'] },
 
         { name: 'walletTo', label: '入金先', type: 'select',
           required: true,
-          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay', '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'] },
+          options: ['楽天カード', '現金', 'ICOCA(スマホ)', 'ICOCA(カード)', 'PayPay',
+                    '楽天銀行', 'dNEOBANK', '特別費口座', '楽天証券', 'iDeCo'] },
 
         { name: 'amount', label: '金額', type: 'number',
           required: true, prefix: '¥', placeholder: '0' },
@@ -110,8 +119,14 @@ const CONFIG = {
           'entry.137918229': v.memo || '',
         };
         return [
-          { ...common, 'entry.341017103': v.walletFrom, 'entry.2072083293': '-' + v.amount },
-          { ...common, 'entry.96804808': v.walletTo,   'entry.2072083293': v.amount },
+          // 1件目：出金元 → マイナス
+          { ...common,
+            'entry.341017103': v.walletFrom,
+            'entry.2072083293': '-' + v.amount },
+          // 2件目：入金先 → プラス
+          { ...common,
+            'entry.96804808': v.walletTo,
+            'entry.2072083293': v.amount },
         ];
       },
     },

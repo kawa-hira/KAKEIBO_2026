@@ -190,7 +190,6 @@
     el.id = id;
     applyCommon(el, f);
 
-    // optionsMap がある場合は初期選択肢を決定
     const initialOptions = resolveInitialOptions(f);
     initialOptions.forEach(opt => {
       const o = document.createElement('option');
@@ -210,13 +209,11 @@
     return f.options || [];
   }
 
-  // ラジオはinputにだけdata-fnameを付ける（divには付けない＝バグ修正）
   function buildRadio(f, id) {
     const group = document.createElement('div');
     const cols = (f.options || []).length;
     group.className = 'radio-group ' +
       (cols === 2 ? 'cols-2' : cols === 3 ? 'cols-3' : 'cols-many');
-    // ※ group には dataset.fname を付けない（querySelectorAllで誤検出するため）
 
     (f.options || []).forEach((opt, idx) => {
       const lbl = document.createElement('label');
@@ -268,13 +265,11 @@
               o.textContent = opt;
               sel.appendChild(o);
             });
-            // 同じ値が新しい選択肢にあれば維持、なければ先頭
             if (newOpts.includes(prev)) sel.value = prev;
           }
         }
       };
 
-      // 依存元の入力（input/select）にイベントバインド
       const depInputs = form.querySelectorAll(`input[data-fname="${depName}"], select[data-fname="${depName}"], textarea[data-fname="${depName}"]`);
       depInputs.forEach(el => {
         el.addEventListener('change', update);
@@ -283,11 +278,9 @@
     });
   }
 
-  // input/select/textarea要素から値を取得（divは除外）
   function getValueByName(form, fname) {
     const els = form.querySelectorAll(`input[data-fname="${fname}"], select[data-fname="${fname}"], textarea[data-fname="${fname}"]`);
     if (els.length === 0) return null;
-    // ラジオ
     if (els[0].type === 'radio') {
       const checked = Array.from(els).find(e => e.checked);
       return checked ? checked.value : null;
@@ -340,16 +333,27 @@
     return out;
   }
 
+  // 通常モード：dependsOn.entryMap を考慮して送信先entryを決定
   function collectPayload(form, formDef) {
     const out = {};
     formDef.fields.forEach(f => {
-      if (!f.entry) return;
       if (f.type === 'hidden') {
-        out[f.entry] = f.value != null ? f.value : '';
-      } else {
-        const v = getValueByName(form, f.name);
-        if (v != null) out[f.entry] = v;
+        if (f.entry) out[f.entry] = f.value != null ? f.value : '';
+        return;
       }
+
+      // 送信先entryを決定（entryMap優先、なければf.entry）
+      let entry = f.entry;
+      if (f.dependsOn && f.dependsOn.entryMap) {
+        const depVal = getValueByName(form, f.dependsOn.field);
+        if (f.dependsOn.entryMap[depVal]) {
+          entry = f.dependsOn.entryMap[depVal];
+        }
+      }
+
+      if (!entry) return;
+      const v = getValueByName(form, f.name);
+      if (v != null) out[entry] = v;
     });
     return out;
   }
@@ -403,7 +407,6 @@
         if (el) el.valueAsDate = new Date();
       }
     });
-    // 依存ラベル＆選択肢を初期状態に
     bindDependencies(form, formDef);
 
     btn.disabled = false;
