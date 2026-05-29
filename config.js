@@ -10,7 +10,7 @@
 
 const CONFIG = {
   // 全シート共通の送信先
-  action: 'https://docs.google.com/forms/d/e/1FAIpQLSc2wP6nKtexr11OOrRTfkfSlmt13ejwFx3jsvWxy7lCgm6-Ew/formResponse',
+  action: 'https://docs.google.com/forms/d/e//formResponse',
 
   forms: [
     // -----------------------------------------------------
@@ -65,8 +65,20 @@ const CONFIG = {
           },
         },
 
-        { name: 'amount', label: '金額', type: 'number',
-          entry: 'entry.2072083293', required: true, prefix: '¥', placeholder: '0' },
+        // 金額：支出はマイナス、収入はプラスで送信
+        // transform(値, 全入力値) → 送信する文字列 を返す
+        {
+          name: 'amount',
+          label: '金額',
+          type: 'number',
+          entry: 'entry.2072083293',
+          required: true,
+          prefix: '¥',
+          placeholder: '0',
+          transform: (val, values) => {
+            return values.type === '支出' ? '-' + val : val;
+          },
+        },
 
         { name: 'memo', label: 'メモ', type: 'textarea',
           entry: 'entry.137918229', placeholder: '任意' },

@@ -244,7 +244,6 @@
       const update = () => {
         const val = getValueByName(form, depName);
 
-        // ラベル切替
         if (f.dependsOn.labelMap) {
           const target = form.querySelector(`[data-field-name="${f.name}"] .lbl`);
           if (target && f.dependsOn.labelMap[val]) {
@@ -252,7 +251,6 @@
           }
         }
 
-        // 選択肢切替（select用）
         if (f.dependsOn.optionsMap) {
           const sel = form.querySelector(`select[data-fname="${f.name}"]`);
           const newOpts = f.dependsOn.optionsMap[val];
@@ -333,9 +331,12 @@
     return out;
   }
 
-  // 通常モード：dependsOn.entryMap を考慮して送信先entryを決定
+  // 通常モード：dependsOn.entryMap / transform を考慮して送信
   function collectPayload(form, formDef) {
     const out = {};
+    // 全入力値（transformに渡す用）
+    const values = collectValues(form, formDef);
+
     formDef.fields.forEach(f => {
       if (f.type === 'hidden') {
         if (f.entry) out[f.entry] = f.value != null ? f.value : '';
@@ -350,10 +351,17 @@
           entry = f.dependsOn.entryMap[depVal];
         }
       }
-
       if (!entry) return;
-      const v = getValueByName(form, f.name);
-      if (v != null) out[entry] = v;
+
+      let v = getValueByName(form, f.name);
+      if (v == null) return;
+
+      // transform があれば値を加工
+      if (typeof f.transform === 'function') {
+        v = f.transform(v, values);
+      }
+
+      out[entry] = v;
     });
     return out;
   }
